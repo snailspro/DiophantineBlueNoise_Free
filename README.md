@@ -42,6 +42,14 @@ If you want the **plug-and-play integrations** with all quality tiers and tempor
 
 👉 **[Get the Full Bundle on Gumroad](https://visualizealex.gumroad.com/l/qunsg)**
 
+---
+
+## 🎮 Interactive Demos
+
+See the difference in real-time in your browser:
+- [**2D Gradient Demo**](demo.html)
+- [**3D Raymarching & Soft Shadows Demo**](demo_3d.html)
+
 The full bundle includes:
 - **Unity (URP/HDRP)** shaders and C# integration
 - **Unreal Engine 5** `.usf` and Material Functions
