@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diophantine Blue Noise - Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f1115;
+            --text-color: #e2e8f0;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #glcanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+        }
+
+        .ui-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            padding: 2rem;
+            pointer-events: none;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            width: 350px;
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tagline {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-top: -1rem;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #cbd5e1;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: white;
+            font-family: inherit;
+            outline: none;
+        }
+        
+        select:focus {
+            border-color: var(--primary);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+        }
+
+        .toggle-switch {
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            position: relative;
+            transition: 0.3s;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        input[type="checkbox"] {
+            display: none;
+        }
+
+        input[type="checkbox"]:checked + .toggle-switch {
+            background: var(--primary);
+        }
+
+        input[type="checkbox"]:checked + .toggle-switch::after {
+            transform: translateX(20px);
+        }
+
+        .stats-panel {
+            align-self: flex-end;
+            margin-top: auto;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .stats-value {
+            font-weight: 800;
+            color: white;
+            font-size: 1.1rem;
+        }
+        
+        .footer {
+            margin-top: auto;
+            font-size: 0.75rem;
+            color: #64748b;
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="glcanvas"></canvas>
+
+    <div class="ui-container">
+        <div class="panel">
+            <div>
+                <h1>Diophantine Blue Noise</h1>
+                <p class="tagline">Zero-VRAM Procedural Dithering</p>
+            </div>
+
+            <div class="control-group">
+                <label for="noiseType">Noise Algorithm</label>
+                <select id="noiseType">
+                    <option value="0">No Dither (Color Banding)</option>
+                    <option value="1">White Noise (Clumpy)</option>
+                    <option value="2" selected>Diophantine Blue Noise (Smooth)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="intensity">Dither Intensity</label>
+                <input type="range" id="intensity" min="0" max="2" step="0.05" value="1.0">
+            </div>
+            
+            <div class="control-group">
+                <label for="bandingSize">Simulated Color Depth</label>
+                <input type="range" id="bandingSize" min="2" max="32" step="1" value="8">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <div class="toggle-container">
+                        <input type="checkbox" id="temporal" checked>
+                        <div class="toggle-switch"></div>
+                        <span style="font-size: 0.85rem; font-weight: 600;">Temporal Animation</span>
+                    </div>
+                </label>
+            </div>
+            
+            <div class="footer">
+                Powered by Basin Mathematics
+            </div>
+        </div>
+
+        <div class="panel stats-panel" style="width: auto; height: max-content;">
+            <div class="control-group">
+                <label>VRAM Usage</label>
+                <div class="stats-value" style="color: #4ade80;">0 Bytes</div>
+            </div>
+            <div class="control-group" style="margin-top: 1rem;">
+                <label>Texture Reads</label>
+                <div class="stats-value" style="color: #4ade80;">0</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+const vsSource = `#version 300 es
+in vec4 aVertexPosition;
+void main() {
+    gl_Position = aVertexPosition;
+}`;
+
+const fsSource = `#version 300 es
+precision highp float;
+
+uniform vec2 uResolution;
+uniform float uTime;
+uniform int uNoiseType;
+uniform float uIntensity;
+uniform float uLevels;
+uniform bool uTemporal;
+uniform int uFrame;
+
+out vec4 fragColor;
+
+// White noise hash
+float hash12(vec2 p) {
+    vec3 p3  = fract(vec3(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+// Simplified Diophantine Blue Noise approximation
+float diophantineBlueNoise(vec2 uv, int frame) {
+    // Weyl sequence base (irrational numbers)
+    vec2 magic = vec2(0.7548776662466927, 0.5698402909980532); // R2 sequence
+    
+    float noise = fract(uv.x * magic.x + uv.y * magic.y);
+    
+    // High frequency scrambling (Bayer-like integration)
+    noise = fract(noise * 1.61803398875);
+    
+    if (uTemporal) {
+        // Golden ratio for temporal distribution
+        noise = fract(noise + float(frame) * 0.61803398875);
+    }
+    
+    // Remap a bit to simulate blue noise spectrum properties (high frequency)
+    float checker = mod(floor(uv.x) + floor(uv.y), 2.0);
+    noise = fract(noise + checker * 0.5);
+    
+    return noise;
+}
+
+void main() {
+    vec2 uv = gl_FragCoord.xy / uResolution;
+    
+    // Create a smooth gradient
+    vec3 color = vec3(uv.x * 0.5 + uv.y * 0.5);
+    
+    // Add radial gradient for vignette
+    vec2 center = uv - 0.5;
+    float dist = length(center);
+    color *= smoothstep(0.8, 0.0, dist);
+    
+    // Base color tint
+    color *= vec3(0.1, 0.2, 0.4) + vec3(0.5, 0.1, 0.8) * uv.x;
+    
+    float noiseVal = 0.0;
+    
+    if (uNoiseType == 1) {
+        // White Noise
+        float t = uTemporal ? uTime : 0.0;
+        noiseVal = hash12(gl_FragCoord.xy + t);
+    } else if (uNoiseType == 2) {
+        // Diophantine Blue Noise
+        noiseVal = diophantineBlueNoise(gl_FragCoord.xy, uTemporal ? uFrame : 0);
+    }
+    
+    // Shift noise to [-0.5, 0.5]
+    noiseVal -= 0.5;
+    
+    // Apply quantization to simulate color banding (e.g., 8-bit or lower)
+    float levels = uLevels; 
+    
+    if (uNoiseType != 0) {
+        color += (noiseVal * uIntensity) / levels;
+    }
+    
+    color = floor(color * levels) / levels;
+    
+    // Gamma correction
+    color = pow(color, vec3(1.0/2.2));
+    
+    fragColor = vec4(color, 1.0);
+}
+`;
+
+function initWebGL() {
+    const canvas = document.getElementById('glcanvas');
+    const gl = canvas.getContext('webgl2');
+
+    if (!gl) {
+        alert('WebGL 2 is not available.');
+        return;
+    }
+
+    function createShader(type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+        }
+        return shader;
+    }
+
+    const vertexShader = createShader(gl.VERTEX_SHADER, vsSource);
+    const fragmentShader = createShader(gl.FRAGMENT_SHADER, fsSource);
+
+    const program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error('Program link error:', gl.getProgramInfoLog(program));
+        return;
+    }
+
+    gl.useProgram(program);
+
+    const positions = new Float32Array([
+        -1.0, -1.0,
+         1.0, -1.0,
+        -1.0,  1.0,
+         1.0,  1.0,
+    ]);
+
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+
+    const positionAttributeLocation = gl.getAttribLocation(program, 'aVertexPosition');
+    gl.enableVertexAttribArray(positionAttributeLocation);
+    gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+
+    const uResolution = gl.getUniformLocation(program, 'uResolution');
+    const uTime = gl.getUniformLocation(program, 'uTime');
+    const uNoiseType = gl.getUniformLocation(program, 'uNoiseType');
+    const uIntensity = gl.getUniformLocation(program, 'uIntensity');
+    const uLevels = gl.getUniformLocation(program, 'uLevels');
+    const uTemporal = gl.getUniformLocation(program, 'uTemporal');
+    const uFrame = gl.getUniformLocation(program, 'uFrame');
+
+    let frameCount = 0;
+
+    function render(time) {
+        time *= 0.001;
+        frameCount++;
+
+        if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+
+        gl.uniform2f(uResolution, canvas.width, canvas.height);
+        gl.uniform1f(uTime, time);
+        
+        const noiseType = parseInt(document.getElementById('noiseType').value);
+        gl.uniform1i(uNoiseType, noiseType);
+        
+        const intensity = parseFloat(document.getElementById('intensity').value);
+        gl.uniform1f(uIntensity, intensity);
+        
+        const levels = parseFloat(document.getElementById('bandingSize').value);
+        gl.uniform1f(uLevels, levels);
+        
+        const temporal = document.getElementById('temporal').checked;
+        gl.uniform1i(uTemporal, temporal ? 1 : 0);
+        
+        gl.uniform1i(uFrame, frameCount);
+
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+}
+
+window.onload = initWebGL;
+</script>
+</body>
+</html>
